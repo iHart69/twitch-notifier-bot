@@ -143,7 +143,7 @@ function callbackToDiscordChannel( streamerName, streamerChannels, res ) { // pr
 				"description": res.stream.channel.url,
 				"color": 0x9689b9,
 				"author": {
-					"name": twitchTempConfig[ streamerName ][ "displayname" ] + "online !",
+					"name": twitchTempConfig[ streamerName ][ "displayname" ] + " online !",
 					"icon_url": icon_twitch_notifier,
 				  },
 				"image": {
