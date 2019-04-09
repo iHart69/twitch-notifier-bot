@@ -13,7 +13,11 @@ console.log( "Loading configuration" )
 const configuration = config.get( "configuration" )
 const botName = "Twitch Notifier Bot"
 const botAuthor = "DJ Arghlex#1729"
-const botVersion = "0.3.5.2"
+const botVersion = "0.3.5.3"
+
+//list icons
+const icon_twitch_notifier = "https://raw.githubusercontent.com/iHart69/twitch-notifier-bot/master/icons/twitch-notifier.png"
+const icon_twitch_help = "https://raw.githubusercontent.com/iHart69/twitch-notifier-bot/master/icons/help-page.png"
 
 // why the hell do i have to do this
 global.twitchConfig = {}
@@ -84,12 +88,12 @@ function checkTwitch( streamerName, streamerChannels, callback ) { // check a tw
 	apiPath = "/kraken/streams/" + streamerName.trim() + "?junktimestamp=" + Math.round( ( new Date() )
 		.getTime() / 1000 );
 	opt = {
-		host: "api.twitch.tv"
-		, path: apiPath
-		, headers: {
-			"Client-ID": configuration.twitch.token
-			, "Accept": "application/vnd.twitchtv.v3+json"
-			, "User-Agent": botName + " v" + botVersion + " by " + botAuthor
+		host: "api.twitch.tv",
+		path: apiPath,
+		headers: {
+			"Client-ID": configuration.twitch.token,
+			"Accept": "application/vnd.twitchtv.v3+json",
+			"User-Agent": botName + " v" + botVersion + " by " + botAuthor
 		}
 	};
 	https.get( opt, ( res ) => {
@@ -126,9 +130,9 @@ function callbackToDiscordChannel( streamerName, streamerChannels, res ) { // pr
 	if ( res && res.stream ) { // stream is currently online
 		if ( !twitchTempConfig[ streamerName ].online ) { // stream was not marked as being online
 			twitchTempConfig[ streamerName ].online = true;
-			writeLog( streamerName + " ONLINE!", "TwitchNotifier", false )
+			writeLog( streamerName + " ONLINE !", "TwitchNotifier", false )
 			if ( streamerChannels.length === 0 ) {
-				writeLog( streamerName + " ERR! nochannels", "TwitchNotifier" )
+				writeLog( streamerName + " ERROR ! nochannels", "TwitchNotifier" )
 				return
 			}
 			writeLog( streamerName + " new stream ONLINE, sending message" )
@@ -136,35 +140,47 @@ function callbackToDiscordChannel( streamerName, streamerChannels, res ) { // pr
 			currentUnixTime = Math.round( ( new Date() )
 				.getTime() / 1000 )
 			embedContents = {
-				"title": "Twitch streamer `" + twitchTempConfig[ streamerName ][ "displayname" ] + "` has begun streaming! Click here to watch!"
-				, "color": 0x9689b9
-				, "type": "rich"
-				, "url": res.stream.channel.url
-				, "description": "**" + res.stream.channel.status + "**\nPlaying: " + res.stream.game
-				, "image": {
+				"description": res.stream.channel.url,
+				"color": 0x9689b9,
+				"author": {
+					"name": twitchTempConfig[ streamerName ][ "displayname" ] + "online !",
+					"icon_url": icon_twitch_notifier,
+				  },
+				"image": {
 					"url": res.stream.preview.large + "?junktimestamp=" + currentUnixTime
-				}
-				, "thumbnail": {
+				},
+				"thumbnail": {
 					"url": res.stream.channel.logo + "?junktimestamp=" + currentUnixTime
-				}
-				, footer: {
-					icon_url: "https://raw.githubusercontent.com/DJArghlex/twitch-notifier-bot/master/icons/twitch-notifier.png"
-					, text: botName + " v" + botVersion
-				}
-				, fields: [ {
-					"name": "Viewers"
-					, "value": res.stream.viewers
-					, "inline": true
-				}, {
-					"name": "Followers"
-					, "value": res.stream.channel.followers
-					, "inline": true
-				} ]
+				},
+				"footer": {
+					icon_url: icon_twitch_notifier,
+					text: "Twitch" 
+				},
+				fields: [ 
+					{
+						"name": "Playing",
+						"value": res.stream.game
+					},
+					{
+						"name": "Stream title",
+						"value": res.stream.channel.status
+					},
+					{
+						"name": "Viewers",
+						"value": res.stream.viewers,
+						"inline": true
+					},
+					{
+						"name": "Followers",
+						"value": res.stream.channel.followers,
+						"inline": true
+					}
+				]
 			}
 			for ( let i = 0; i < streamerChannels.length; i++ ) {
 				bot.sendMessage( {
-					"to": streamerChannels[ i ]
-					, "embed": embedContents
+					"to": streamerChannels[ i ],
+					 "embed": embedContents
 				}, function( a ) {
 					if ( a !== null ) {
 						writeLog( "ERROR sendmessage: " + a, "TwitchNotifier" )
@@ -188,16 +204,16 @@ function callbackToDiscordChannel( streamerName, streamerChannels, res ) { // pr
 			}
 			embedContents = {
 				footer: {
-					icon_url: "https://raw.githubusercontent.com/DJArghlex/twitch-notifier-bot/master/icons/twitch-notifier.png"
-					, text: botName + " v" + botVersion
-				}
-				, title: "Twitch streamer `" + streamerNameFancy + "` has stopped streaming..."
-				, "color": 0x9689b9
+					"icon_url" : icon_twitch_notifier,
+					"text" : "Twitch"
+				},
+				title: "Twitch streamer `" + streamerNameFancy + "` has stopped streaming...",
+				"color": 0x9689b9
 			}
 			for ( let i = 0; i < streamerChannels.length; i++ ) {
 				bot.sendMessage( {
-					"to": streamerChannels[ i ]
-					, "embed": embedContents
+					"to": streamerChannels[ i ],
+					"embed": embedContents
 				} )
 			}
 			twitchTempConfig[ streamerName ].online = false
@@ -236,8 +252,8 @@ function tickTwitchCheck() { // iterate through stored twitch streamers list and
 			} catch ( error ) {
 				writeLog( "COULD NOT CHECK TWITCH STREAM! err: " + error, "Error" );
 				bot.sendMessage( {
-					to: configuration.channelId
-					, message: ":sos: <@" + configuration.adminUserId + ">: An error occured! `tickTwitchCheck(): checkTwitch(" + streamerName + "): " + error + "`"
+					to: configuration.channelId,
+					message: ":sos: <@" + configuration.adminUserId + ">: An error occured! `tickTwitchCheck(): checkTwitch(" + streamerName + "): " + error + "`"
 				} )
 			}
 		}
@@ -248,12 +264,12 @@ function botManagement ( argument, callback ) { // do server/bot management stuf
 
 	const returnedEmbedObject = {
 		footer: {
-			icon_url: "https://raw.githubusercontent.com/DJArghlex/twitch-notifier-bot/master/icons/twitch-notifier.png"
-			, text: botName + " v" + botVersion
-		}
-		, title: 'empty title'
-		, description: 'empty description'
-		, fields: []
+			icon_url: icon_twitch_notifier,
+			text: botName + " v" + botVersion
+		},
+		title: 'empty title',
+		description: 'empty description',
+		fields: []
 	};
 	let arguments = argument.split(' ')
 
@@ -280,9 +296,9 @@ function botManagement ( argument, callback ) { // do server/bot management stuf
 			newnick = arguments.slice(3).join(' ')
 			
 			bot.editNickname( {
-				serverID: serverId
-				, userID: bot.id
-				, nick: newnick
+				serverID: serverId,
+				userID: bot.id,
+				nick: newnick
 			} )
 
 			writeLog('Overwrote command prefix to `'+arguments.slice(1).join(' ')+'`', 'Management')
@@ -317,19 +333,17 @@ function botManagement ( argument, callback ) { // do server/bot management stuf
 		for (server in bot.servers) {
 			const returnedEmbedObject = {
 				footer: {
-					icon_url: "https://raw.githubusercontent.com/DJArghlex/twitch-notifier-bot/master/icons/twitch-notifier.png"
-					, text: botName + " v" + botVersion
-				}
-				, title: 'Message from Bot Administrator <@' + configuration.adminUserId + '> (DJ Arghlex#1729)'
-				, description: arguments.slice(1).join(' ')
-				, fields: []
+					icon_url: icon_twitch_notifier,
+					text: botName + " v" + botVersion
+				},
+				title: 'Message from Bot Administrator <@' + configuration.adminUserId + '> (DJ Arghlex#1729)', description: arguments.slice(1).join(' '),
+				fields: []
 			};
 			bot.sendMessage( {
-				to: bot.servers[server]['guild_id']
-				, embed: returnedEmbedObject
+				to: bot.servers[server]['guild_id'],
+				embed: returnedEmbedObject
 			} );
 		}
-
 
 	} else if (arguments[0] == 'listservers') {
 		returnedEmbedObject.title = 'Server Listing'
@@ -345,7 +359,6 @@ function botManagement ( argument, callback ) { // do server/bot management stuf
 		callback(returnedEmbedObject)
 		return
 
-
 	} else if (arguments[0] == 'setgame') { // currentgame
 		bot.setPresence( {
 			'game': {
@@ -359,7 +372,6 @@ function botManagement ( argument, callback ) { // do server/bot management stuf
 		callback(returnedEmbedObject)
 		return
 
-
 	} else if (arguments[0] == 'wipenotifystatus') { // wipe twitchnotifier's currently-online list
 		writeLog( 'Wiping TwitchNotifier\'s TwitchTempConfig', 'Management' )
 		twitchTempConfig = {}
@@ -367,7 +379,6 @@ function botManagement ( argument, callback ) { // do server/bot management stuf
 		returnedEmbedObject.description = 'Wiped `twitchTempConfig` storage variable. Currently live streams will be treated as newly-live, and notifications will be posted for them at the next check.'
 		callback(returnedEmbedObject)
 		return
-
 
 	} else if (arguments[0] == 'setcmdprefix') { // cmd prefix temp override
 		if (arguments[1] !== undefined && arguments[1].length > 0 ) {
@@ -385,65 +396,64 @@ function botManagement ( argument, callback ) { // do server/bot management stuf
 			throw 'New command prefix was invalid.'
 		}
 
-
 	} else if (arguments[0] == 'help') { // help sub-page
 		const returnedEmbedObject = { // totally overwrites the one set outside the logic above. this is intentional.
 			footer: {
-				icon_url: "https://raw.githubusercontent.com/DJArghlex/twitch-notifier-bot/master/icons/twitch-notifier.png"
-				, text: botName + " v" + botVersion
-			}
-			, author: {
-				name: 'Bot Mgmt Help'
-				, icon_url: "https://raw.githubusercontent.com/DJArghlex/twitch-notifier-bot/master/icons/help-page.png"
-			}
-			, title: 'Bot Management Help Sub-Page'
-			, description: 'Only usable by bot owner: <@' + configuration.adminUserId + '>'
-			, fields: []
+				icon_url: icon_twitch_notifier,
+				text: botName + " v" + botVersion
+			},
+			author: {
+				name: 'Bot Mgmt Help',
+				icon_url: icon_twitch_help
+			},
+			title: 'Bot Management Help Sub-Page',
+			description: 'Only usable by bot owner: <@' + configuration.adminUserId + '>',
+			fields: []
 		};
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'botmanagement help'
-			, value: 'This output'
-			, inline: true
+			name: configuration.commandPrefix + 'botmanagement help',
+			value: 'This output',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'botmanagement wipeNotifyStatus'
-			, value: 'Wipes TwitchTempConfig for diagnostic purposes.'
-			, inline: true
+			name: configuration.commandPrefix + 'botmanagement wipeNotifyStatus',
+			value: 'Wipes TwitchTempConfig for diagnostic purposes.',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'botmanagement broadcast <string>'
-			, value: 'Sends a message to the default channel of every Discord the bot is on'
-			, inline: true
+			name: configuration.commandPrefix + 'botmanagement broadcast <string>',
+			value: 'Sends a message to the default channel of every Discord the bot is on',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'botmanagement setgame <string>'
-			, value: 'Temporarily sets the current game the bot is "playing" to <string>'
-			, inline: true
+			name: configuration.commandPrefix + 'botmanagement setgame <string>',
+			value: 'Temporarily sets the current game the bot is "playing" to <string>',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'botmanagement setcmdprefix <char>'
-			, value: 'Temporarily sets the command prefix to <char>'
-			, inline: true
+			name: configuration.commandPrefix + 'botmanagement setcmdprefix <char>',
+			value: 'Temporarily sets the command prefix to <char>',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'botmanagement listservers'
-			, value: 'Lists servers the bot is on'
-			, inline: true
+			name: configuration.commandPrefix + 'botmanagement listservers',
+			value: 'Lists servers the bot is on',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'botmanagement server <serverID> leave'
-			, value: 'Forces the bot to leave <serverID>'
-			, inline: true
+			name: configuration.commandPrefix + 'botmanagement server <serverID> leave',
+			value: 'Forces the bot to leave <serverID>',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'botmanagement server <serverID> setnick <nickname>'
-			, value: 'Changes the bot\'s nickname on <serverID>'
-			, inline: true
+			name: configuration.commandPrefix + 'botmanagement server <serverID> setnick <nickname>',
+			value: 'Changes the bot\'s nickname on <serverID>',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'botmanagement server <serverID> getadmininfo'
-			, value: 'Retrieves information of the owner of <serverID> (username, 4-number character, and userID)'
-			, inline: true
+			name: configuration.commandPrefix + 'botmanagement server <serverID> getadmininfo',
+			value: 'Retrieves information of the owner of <serverID> (username, 4-number character, and userID)',
+			inline: true
 		} );
 		callback (returnedEmbedObject)
 	} else {
@@ -454,12 +464,12 @@ function botManagement ( argument, callback ) { // do server/bot management stuf
 // DISCORD BOT INTERFACES
 console.log( "Starting Discord interface" )
 const bot = new Discord.Client( {
-	token: configuration.authToken
-	, autorun: true
+	token: configuration.authToken,
+	autorun: true
 } )
 bot.on( 'ready', function() { // sets up and configures the bot's nicknames and stuff after the API initializes and is ready
-	writeLog( "User ID: " + bot.id + ", Bot User: " + bot.username, "Discord" )
-	writeLog( "Add to your server using this link: ", "Discord" );
+	writeLog( "User ID : " + bot.id + ", Bot User : " + bot.username, "Discord" )
+	writeLog( "Add to your server using this link : ", "Discord" );
 	writeLog( " https://discordapp.com/oauth2/authorize?client_id=" + bot.id + "&scope=bot&permissions=67160064", "Discord" );
 	writeLog( "*** Bot ready! ***", "Discord" )
 	bot.setPresence( {
@@ -493,140 +503,140 @@ bot.on( 'message', function( user, userId, channelId, message, event ) { // mess
 	writeLog( "<" + user + "> " + message, "Channel - " + server + "/" + channel, message.startsWith( configuration.commandPrefix ) ) // log everything to stdout, but log command usage to file
 	if ( command == configuration.commandPrefix + 'ping' ) { // send a message to the channel as a ping-testing thing.
 		bot.sendMessage( {
-			to: channelId
-			, message: ':heavy_check_mark: <@' + userId + '>: Pong!'
+			to: channelId,
+			message: ':heavy_check_mark: <@' + userId + '>: Pong!'
 		} )
 	} else if ( command == configuration.commandPrefix + 'ping-embed' ) { // send a embed to the channel as a ping-testing thing.
 		bot.sendMessage( {
-			to: channelId
-			, 'embed': {
-				'title': 'Pong!'
-				, 'description': ':heavy_check_mark: Pong!'
-				, 'color': 0x0a8bd6
-				, 'url': 'https://github.com/DJArghlex/discord-twitch-bot'
-				, 'fields': [ {
-					'name': 'Hey ' + user + '!'
-					, 'value': 'It works!'
-					, 'inline': true
+			to: channelId,
+			'embed': {
+				'title': 'Pong!',
+				'description': ':heavy_check_mark: Pong!',
+				'color': 0x0a8bd6,
+				'url': 'https://github.com/DJArghlex/discord-twitch-bot',
+				'fields': [ {
+					'name': 'Hey ' + user + '!',
+					'value': 'It works!',
+					'inline': true
 				} ]
 			}
 		}, function( err, resp ) {
 			if ( err ) {
 				bot.sendMessage( {
-					to: channelId
-					, message: ':sos: <@' + userId + '>: Embedded pong failed! Reason: `' + err + '` `' + resp + '`'
+					to: channelId,
+					message: ':sos: <@' + userId + '>: Embedded pong failed! Reason: `' + err + '` `' + resp + '`'
 				} )
 			}
 		} )
 	} else if ( command === configuration.commandPrefix + 'help' ) { // Help page
 		const returnedEmbedObject = {
 			footer: {
-				icon_url: "https://raw.githubusercontent.com/DJArghlex/twitch-notifier-bot/master/icons/twitch-notifier.png"
-				, text: botName + ' v' + botVersion + ' by ' + botAuthor
-			}
-			, author: {
-				name: 'Help'
-				, icon_url: "https://raw.githubusercontent.com/DJArghlex/twitch-notifier-bot/master/icons/help-page.png"
-			}
-			, title: 'Help Page'
-			, description: '**' + botName + ' v' + botVersion + ' by ' + botAuthor + '** - Direct complaints to `/dev/null`\n    Source available on GitHub: <https://github.com/DJArghlex/discord-twitch-bot>\n    Support development by doing something nice for someone in your life\n    Add this bot to your server! <https://discordapp.com/oauth2/authorize?client_id=' + bot.id + '&scope=bot&permissions=67160064>'
-			, fields: []
+				icon_url: icon_twitch_notifier,
+				text: botName + ' v' + botVersion + ' by ' + botAuthor
+			},
+			author: {
+				name: 'Help',
+				icon_url: icon_twitch_help
+			},
+			title: 'Help Page',
+			description: '**' + botName + ' v' + botVersion + ' by ' + botAuthor + '** - Direct complaints to `/dev/null`\n    Source available on GitHub: <https://github.com/DJArghlex/discord-twitch-bot>\n    Support development by doing something nice for someone in your life\n    Add this bot to your server! <https://discordapp.com/oauth2/authorize?client_id=' + bot.id + '&scope=bot&permissions=67160064>',
+			fields: []
 		};
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'help'
-			, value: 'This output'
-			, inline: true
+			name: configuration.commandPrefix + 'help',
+			value: 'This output',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'ping'
-			, value: 'Returns a pong'
-			, inline: true
+			name: configuration.commandPrefix + 'ping',
+			value: 'Returns a pong',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'ping-embed'
-			, value: 'Returns a fancy pong'
-			, inline: true
+			name: configuration.commandPrefix + 'ping-embed',
+			value: 'Returns a fancy pong',
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + "addstream <twitch user>"
-			, value: "Adds a Twitch stream to notify a channel with."
-			, inline: true
+			name: configuration.commandPrefix + "addstream <twitch user>",
+			value: "Adds a Twitch stream to notify a channel with.",
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + "removestream <twitch user>"
-			, value: "Removes a Twitch stream to check."
-			, inline: true
+			name: configuration.commandPrefix + "removestream <twitch user>",
+			value: "Removes a Twitch stream to check.",
+			 inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: "~~"+configuration.commandPrefix + "forgetNotifyStatus~~"
-			, value: "~~wipes twitchTempConfig for diagnostic purposes~~\nMoved to `!botmanagement wipeNotifyStatus`"
-			, inline: true
+			name: "~~"+configuration.commandPrefix + "forgetNotifyStatus~~",
+			value: "~~wipes twitchTempConfig for diagnostic purposes~~\nMoved to `!botmanagement wipeNotifyStatus`",
+			inline: true
 		} );
 		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'restart'
-			, value: 'Restarts the bot.'
-			, inline: true
+			name: configuration.commandPrefix + 'restart',
+			value: 'Restarts the bot.',
+			inline: true
 		} );
 		if ( userId.toString() === configuration.adminUserId ) {
 			returnedEmbedObject.fields.push( {
-				name: '__**Administrative Commands**__'
-				, value: 'Only usable by <@' + configuration.adminUserId + ">"
+				name: '__**Administrative Commands**__',
+				value: 'Only usable by <@' + configuration.adminUserId + ">"
 			} );
 			returnedEmbedObject.fields.push( {
-				name: configuration.commandPrefix + "setTwitchNotifyChannel <channel ID>"
-				, value: "Sets Twitch stream online/offline notifications channel"
-				, inline: true
+				name: configuration.commandPrefix + "setTwitchNotifyChannel <channel ID>",
+				value: "Sets Twitch stream online/offline notifications channel",
+				inline: true
 			} );
 			returnedEmbedObject.fields.push( {
-				name: configuration.commandPrefix + 'botmanagement help'
-				, value: 'Bot Management Help Sub-page'
-				, inline: true
+				name: configuration.commandPrefix + 'botmanagement help',
+				value: 'Bot Management Help Sub-page',
+				inline: true
 			} );
 		} else {
 			returnedEmbedObject.fields.push( {
-				name: "~~" + configuration.commandPrefix + "setTwitchNotifyChannel <string>~~"
-				, value: "~~Sets Twitch stream online/offline notifications channel~~ (ask <@" + configuration.adminUserId + ">!)"
-				, inline: true
+				name: "~~" + configuration.commandPrefix + "setTwitchNotifyChannel <string>~~",
+				value: "~~Sets Twitch stream online/offline notifications channel~~ (ask <@" + configuration.adminUserId + ">!)",
+				inline: true
 			} );
 		}
 		bot.sendMessage( {
-			to: channelId
-			, embed: returnedEmbedObject
+			to: channelId,
+			embed: returnedEmbedObject
 		} );
 		writeLog( 'Sent help page', 'Discord' );
 	} else if ( command == configuration.commandPrefix + "addstream" ) {
 		try {
 			streamManage( argument, "add", serverId, function( embeddedObject ) {
 				bot.sendMessage( {
-					to: channelId
-					, "message": embeddedObject
+					to: channelId,
+					"message": embeddedObject
 				} )
 			} )
 		} catch ( err ) {
 			bot.sendMessage( {
-				to: channelId
-				, message: ":sos: <@" + configuration.adminUserId + ">! An error occured:\ntwitchNotifier(): streamManage(add): `" + err + "`"
+				to: channelId,
+				message: ":sos: <@" + configuration.adminUserId + ">! An error occured:\ntwitchNotifier(): streamManage(add): `" + err + "`"
 			} )
 		}
 	} else if ( command == configuration.commandPrefix + "removestream" ) {
 		try {
 			streamManage( argument, "remove", serverId, function( embeddedObject ) {
 				bot.sendMessage( {
-					to: channelId
-					, "message": embeddedObject
+					to: channelId,
+					"message": embeddedObject
 				} )
 			} )
 		} catch ( err ) {
 			bot.sendMessage( {
-				to: channelId
-				, message: ":sos: <@" + configuration.adminUserId + ">! An error occured:\ntwitchNotifier(): streamManage(remove): `" + err + "`"
+				to: channelId,
+				message: ":sos: <@" + configuration.adminUserId + ">! An error occured:\ntwitchNotifier(): streamManage(remove): `" + err + "`"
 			} )
 		}
 	} else if ( command === configuration.commandPrefix + 'restart' ) { // public
 		writeLog( 'Restart command given by admin', 'Administrative' )
 		bot.sendMessage( {
-			to: channelId
-			, message: ':wave:'
+			to: channelId,
+			message: 'Bot restarting...'
 		}, function( error, response ) {
 			writeLog( 'Restarting!', 'Shutdown' )
 			process.exit( 0 )
@@ -637,15 +647,15 @@ bot.on( 'message', function( user, userId, channelId, message, event ) { // mess
 			try {
 				botManagement( argument, embeddedObject => {
 					bot.sendMessage( {
-						to: channelId
-						, embed: embeddedObject
+						to: channelId,
+						embed: embeddedObject
 					} );
 				} );
 				writeLog( 'BotAdmin ran botManagement('+argument+') successfully', 'Discord' )
 			} catch ( err ) {
 				bot.sendMessage( {
-					to: channelId
-					, message: '<@' + configuration.adminUserId + '>:\n:sos: **An error occured!**\n discordBotManage(): `' + err + '`'
+					to: channelId,
+					message: '<@' + configuration.adminUserId + '>:\n:sos: **An error occured!**\n discordBotManage(): `' + err + '`'
 				} )
 				writeLog( err, 'Error' )
 			}
@@ -658,9 +668,9 @@ bot.on( 'disconnect', function( errMessage, code ) { // disconnect handling, rec
 	setTimeout(bot.connect, 15000) // waits 15 seconds before attempting to reconnect
 } );
 
-bot.once( 'ready', () => {
-	bot.sendMessage( {
-		to: configuration.channelId
-		, message: ':ok: ' + botName + ' `v' + botVersion + '` by '+ botAuthor +' Back online! Type `' + configuration.commandPrefix + 'help` for a list of commands.'
-	} );
-} );
+//bot.once( 'ready', () => {
+//	bot.sendMessage( {
+//		to: configuration.channelId,
+//		message: ':ok: ' + botName + ' `v' + botVersion + '` by '+ botAuthor +' Back online! Type `' + configuration.commandPrefix + 'help` for a list of commands.'
+//	} );
+//} );
