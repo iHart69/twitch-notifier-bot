@@ -539,7 +539,7 @@ bot.on( 'message', function( user, userId, channelId, message, event ) { // mess
 				icon_url: icon_twitch_help
 			},
 			title: 'Help Page',
-			description: '**' + botName + ' v' + botVersion + ' by ' + botAuthor + '** - Direct complaints to `/dev/null`\n    Source available on GitHub: <https://github.com/DJArghlex/discord-twitch-bot>\n    Support development by doing something nice for someone in your life\n    Add this bot to your server! <https://discordapp.com/oauth2/authorize?client_id=' + bot.id + '&scope=bot&permissions=67160064>',
+			description: '**' + botName + ' v' + botVersion + ' by ' + botAuthor + '**',
 			fields: []
 		};
 		returnedEmbedObject.fields.push( {
@@ -567,16 +567,6 @@ bot.on( 'message', function( user, userId, channelId, message, event ) { // mess
 			value: "Removes a Twitch stream to check.",
 			 inline: true
 		} );
-		returnedEmbedObject.fields.push( {
-			name: "~~"+configuration.commandPrefix + "forgetNotifyStatus~~",
-			value: "~~wipes twitchTempConfig for diagnostic purposes~~\nMoved to `!botmanagement wipeNotifyStatus`",
-			inline: true
-		} );
-		returnedEmbedObject.fields.push( {
-			name: configuration.commandPrefix + 'restart',
-			value: 'Restarts the bot.',
-			inline: true
-		} );
 		if ( userId.toString() === configuration.adminUserId ) {
 			returnedEmbedObject.fields.push( {
 				name: '__**Administrative Commands**__',
@@ -592,15 +582,14 @@ bot.on( 'message', function( user, userId, channelId, message, event ) { // mess
 				value: 'Bot Management Help Sub-page',
 				inline: true
 			} );
-		} else {
 			returnedEmbedObject.fields.push( {
-				name: "~~" + configuration.commandPrefix + "setTwitchNotifyChannel <string>~~",
-				value: "~~Sets Twitch stream online/offline notifications channel~~ (ask <@" + configuration.adminUserId + ">!)",
+				name: configuration.commandPrefix + 'restart',
+				value: 'Restarts the bot.',
 				inline: true
 			} );
-		}
+		} 
 		bot.sendMessage( {
-			to: channelId,
+			to: userId.toString(),
 			embed: returnedEmbedObject
 		} );
 		writeLog( 'Sent help page', 'Discord' );
@@ -632,15 +621,6 @@ bot.on( 'message', function( user, userId, channelId, message, event ) { // mess
 				message: ":sos: <@" + configuration.adminUserId + ">! An error occured:\ntwitchNotifier(): streamManage(remove): `" + err + "`"
 			} )
 		}
-	} else if ( command === configuration.commandPrefix + 'restart' ) { // public
-		writeLog( 'Restart command given by admin', 'Administrative' )
-		bot.sendMessage( {
-			to: channelId,
-			message: 'Bot restarting...'
-		}, function( error, response ) {
-			writeLog( 'Restarting!', 'Shutdown' )
-			process.exit( 0 )
-		} )
 	}
 	if ( userId.toString() == configuration.adminUserId ) { //admin commands
 		if ( command === configuration.commandPrefix + 'botmanagement' ) {
@@ -659,6 +639,15 @@ bot.on( 'message', function( user, userId, channelId, message, event ) { // mess
 				} )
 				writeLog( err, 'Error' )
 			}
+		} else if ( command === configuration.commandPrefix + 'restart' ) {
+			writeLog( 'Restart command given by admin', 'Administrative' )
+			bot.sendMessage( {
+				to: channelId,
+				message: 'Bot restarting...'
+			}, function( error, response ) {
+				writeLog( 'Restarting!', 'Shutdown' )
+				process.exit( 0 )
+			} )
 		}
 	}
 } );
